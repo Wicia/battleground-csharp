@@ -1,76 +1,42 @@
 using System.ComponentModel;
+using BattlefieldCSharp.Model;
 
 namespace BattlefieldCSharp.Controls;
 
 /// <summary>
-/// Karta jednostki: nazwa, rola, liczba HP i pasek HP.
-/// HP jest pilnowane przez właściwości (0..MaxHealth) – z zewnątrz nie da się ustawić złej wartości.
+/// Karta jednostki: tylko wyświetla stan obiektu Unit (nazwa, rola, HP, pasek HP)
+/// i odświeża się sama, gdy model zgłosi zmianę HP. Logika HP siedzi w Unit.
 /// </summary>
 public partial class UnitCard : UserControl
 {
-    private int _health = 100;
-    private int _maxHealth = 100;
+    private Unit? _unit;
     private Color _accentColor = Color.FromArgb(54, 120, 190);
 
     public UnitCard()
     {
         InitializeComponent();
-        UpdateHealthView();
+        Disposed += (_, _) => Unit = null; // odpinamy event, żeby model nie trzymał martwej kontrolki
     }
 
-    public UnitCard(string unitName, string role, int health, int maxHealth, Color accentColor) : this()
+    public UnitCard(Unit unit, Color accentColor) : this()
     {
-        UnitName = unitName;
-        Role = role;
-        MaxHealth = maxHealth;
-        Health = health;
+        Unit = unit;
         AccentColor = accentColor;
     }
 
-    /// <summary>Wywoływane po każdej zmianie HP.</summary>
-    public event EventHandler? HealthChanged;
-
-    [Category("Unit")]
-    [DefaultValue("Unit")]
-    public string UnitName
+    /// <summary>Wyświetlana jednostka. Zmiana podpina/odpina zdarzenie HealthChanged.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Unit? Unit
     {
-        get => lblName.Text;
-        set => lblName.Text = value;
-    }
-
-    [Category("Unit")]
-    [DefaultValue("Role")]
-    public string Role
-    {
-        get => lblRole.Text;
-        set => lblRole.Text = value;
-    }
-
-    [Category("Unit")]
-    [DefaultValue(100)]
-    public int MaxHealth
-    {
-        get => _maxHealth;
+        get => _unit;
         set
         {
-            _maxHealth = Math.Max(1, value);
-            _health = Math.Min(_health, _maxHealth);
-            UpdateHealthView();
-        }
-    }
-
-    [Category("Unit")]
-    [DefaultValue(100)]
-    public int Health
-    {
-        get => _health;
-        set
-        {
-            int clamped = Math.Clamp(value, 0, _maxHealth);
-            if (clamped == _health) return;
-            _health = clamped;
-            UpdateHealthView();
-            HealthChanged?.Invoke(this, EventArgs.Empty);
+            if (_unit == value) return;
+            if (_unit != null) _unit.HealthChanged -= Unit_HealthChanged;
+            _unit = value;
+            if (_unit != null) _unit.HealthChanged += Unit_HealthChanged;
+            RefreshView();
         }
     }
 
@@ -86,25 +52,26 @@ public partial class UnitCard : UserControl
         }
     }
 
-    [Browsable(false)]
-    public bool IsAlive => _health > 0;
+    private void Unit_HealthChanged(object? sender, EventArgs e) => RefreshView();
 
-    public void TakeDamage(int amount) => Health -= Math.Max(0, amount);
-
-    public void Heal(int amount) => Health += Math.Max(0, amount);
-
-    private void UpdateHealthView()
+    private void RefreshView()
     {
-        lblHealth.Text = $"{_health} / {_maxHealth} HP";
+        if (_unit == null) return; // bez modelu (np. w designerze) zostają domyślne teksty
 
-        lblName.ForeColor = IsAlive ? Color.White : Color.FromArgb(110, 115, 125);
+        lblName.Text = _unit.Name;
+        lblRole.Text = _unit.Role;
+        lblHealth.Text = $"{_unit.Health} / {_unit.MaxHealth} HP";
+
+        lblName.ForeColor = _unit.IsAlive ? Color.White : Color.FromArgb(110, 115, 125);
         pnlHpTrack.Invalidate(); // przerysuj pasek HP
     }
 
     // Pasek HP rysowany ręcznie: wypełnienie proporcjonalne do HP, kolor zależny od poziomu.
     private void pnlHpTrack_Paint(object? sender, PaintEventArgs e)
     {
-        double ratio = (double)_health / _maxHealth;
+        if (_unit == null) return;
+
+        double ratio = (double)_unit.Health / _unit.MaxHealth;
         int fillWidth = (int)Math.Round(pnlHpTrack.ClientSize.Width * ratio);
         if (fillWidth <= 0) return;
 
