@@ -1,3 +1,7 @@
+using System.Data;
+using System.Xml.Linq;
+using BattlefieldCSharp.Model;
+
 namespace BattlefieldCSharp;
 
 /// <summary>
@@ -12,14 +16,20 @@ public partial class MainForm : Form
         LoadSampleUnits();
     }
 
-    private void LoadSampleUnits()
+    private async void LoadSampleUnits()
     {
-        teamPlayer.AddUnit("Knight", "Front line", 82, 100);
-        teamPlayer.AddUnit("Archer", "Ranged", 56, 80);
-        teamPlayer.AddUnit("Healer", "Support", 40, 60);
+        var player1 = new Unit("Knight", "Front line", 82);
+        var player2 = new Unit("Orc", "Front line", 70);
 
-        teamEnemy.AddUnit("Orc", "Front line", 70, 100);
-        teamEnemy.AddUnit("Warlock", "Magic", 32, 70);
-        teamEnemy.AddUnit("Goblin", "Skirmisher", 25, 50);
+
+
+
+
+        teamPlayer.AddUnit(player1);
+        teamEnemy.AddUnit(player2);
+        await Task.Delay(2000);
+
+        player2.TakeDamage(30);
+
     }
 }

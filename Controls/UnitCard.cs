@@ -62,7 +62,7 @@ public partial class UnitCard : UserControl
         lblRole.Text = _unit.Role;
         lblHealth.Text = $"{_unit.Health} / {_unit.MaxHealth} HP";
 
-        lblName.ForeColor = _unit.IsAlive ? Color.White : Color.FromArgb(110, 115, 125);
+        lblName.ForeColor = _unit.IsAlive() ? Color.White : Color.FromArgb(110, 115, 125);
         pnlHpTrack.Invalidate(); // przerysuj pasek HP
     }
 

@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using BattlefieldCSharp.Model;
+
 
 namespace BattlefieldCSharp.Controls;
 
@@ -40,9 +42,9 @@ public partial class TeamPanel : UserControl
     [Browsable(false)]
     public IReadOnlyList<UnitCard> Units => flpUnits.Controls.OfType<UnitCard>().ToList();
 
-    public UnitCard AddUnit(string name, string role, int health, int maxHealth)
+    public UnitCard AddUnit(Unit unit)
     {
-        var card = new UnitCard(name, role, health, maxHealth, _accentColor);
+        var card = new UnitCard(unit, _accentColor);
         AddUnit(card);
         return card;
     }
